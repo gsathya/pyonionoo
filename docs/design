@@ -1,0 +1,25 @@
+r Amunet1 21B8466BC4FEF2DCB2FCC8710A4FEA23E108D8B5
+199.48.147.35;;199.48.147.42 2012-07-03 07:00:00 443 80
+Exit,Fast,Guard,HSDir,Running,Stable,Unnamed,V2Dir,Valid 60700 a1
+199.48.147.35 1341263554591
+
+Space-separated elements are:
+
+1. "r" stands for relay, "b" would stand for bridge
+2. "Amunet1" is the nickname
+3. "21B8..." is the upper-case hex relay fingerprint or hashed bridge
+fingerprint
+4. "199.48.147.35;;199.48.147.42" consists of three types of addresses;
+the first is the primary OR address, the second (here empty) is a
+comma-separated list of additional OR addresses, the third is a
+comma-separated list of exit addresses if they're different from OR
+addresses.
+5. "2012-07-03 07:00:00" is the last time the relay or bridge was listed
+in a consensus or status.
+6. "443" is the primary OR port.
+7. "80" is the dir port.
+8. "Exit,..." is the comma-separated list of relay flags.
+9. "60700" is the most recently known consensus weight.
+10. "a1" is the country code.
+11. "199.48.147.34" is the hostname as found by reverse DNS lookup.
+12. "13412..." is the timestamp of last running a reverse DNS lookup.
