@@ -15,7 +15,7 @@ class SummaryHandler(cyclone.web.RequestHandler):
         routers = []
         hex_fingerprint = None
         #TODO - don't hardcode stuff
-        #TODO - - put this in initialisation phase, not in a get request
+        #TODO - put this in initialisation phase, not in a get request
         with open('/Users/sathya/Documents/pyonionoo/pyonionoo/summary') as f:
             for line in f.readlines():
                 router = Router(line)
@@ -37,7 +37,7 @@ class SummaryHandler(cyclone.web.RequestHandler):
                 pass
         
         response = {}
-        relays = []
+        relays, bridges = [], []
         for router in routers:
             if router.is_relay and return_relays:
                 relay_info = {}
@@ -64,8 +64,10 @@ class SummaryHandler(cyclone.web.RequestHandler):
                         self.write({"relays":[bridge_info]})
                         return
                 #TODO - "r"
-                relays.append(bridge_info)
+                bridges.append(bridge_info)
                 
         if relays:
             response['relays'] = relays
+        if bridges:
+            response['bridges'] = bridges
         self.write(response)

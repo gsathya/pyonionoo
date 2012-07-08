@@ -25,7 +25,7 @@ class Application(cyclone.web.Application):
         handlers = [
             (r"/summary?(.+)",              summary.SummaryHandler)
         ]
-
+        
         settings = config.parse_config(config_file)
         
         cyclone.web.Application.__init__(self, handlers, **settings)
