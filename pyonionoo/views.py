@@ -38,20 +38,33 @@ class IndexHandler(cyclone.web.RequestHandler):
         response = {}
         relays = []
         for router in routers:
-            #TODO - bridges
             if router.is_relay and return_relays:
-                router_info = {}
-                router_info["n"] = router.nickname
-                router_info["f"] = router.fingerprint
-                router_info["a"] = [router.address]
+                relay_info = {}
+                relay_info["n"] = router.nickname
+                relay_info["f"] = router.fingerprint
+                relay_info["a"] = [router.address]
                 if router.exit_addresses:
-                    router_info["a"].extend(router.exit_addresses)
+                    relay_info["a"].extend(router.exit_addresses)
                 if hex_fingerprint:
                     if hex_fingerprint == router.fingerprint:
-                        self.write({"relays":[router_info]})
+                        self.write({"relays":[relay_info]})
                         return
                 #TODO - "r"
-                relays.append(router_info)
+                relays.append(relay_info)
+            elif not router.is_relay and return_bridges:
+                bridge_info = {}
+                bridge_info["n"] = router.nickname
+                bridge_info["f"] = router.fingerprint
+                bridge_info["a"] = [router.address]
+                if router.exit_addresses:
+                    bridge_info["a"].extend(router.exit_addresses)
+                if hex_fingerprint:
+                    if hex_fingerprint == router.fingerprint:
+                        self.write({"relays":[bridge_info]})
+                        return
+                #TODO - "r"
+                relays.append(bridge_info)
+                
         if relays:
             response['relays'] = relays
         self.write(response)
