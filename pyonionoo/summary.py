@@ -9,12 +9,13 @@ from twisted.python import log
 from pyonionoo.parser import Router
 
 ARGUMENTS = ['running', 'type', 'search', 'lookup', 'country', 'order', 'limit', 'offset']
-class IndexHandler(cyclone.web.RequestHandler):
+class SummaryHandler(cyclone.web.RequestHandler):
     def get(self, foo):
         return_relays, return_bridge = True, True
         routers = []
         hex_fingerprint = None
         #TODO - don't hardcode stuff
+        #TODO - - put this in initialisation phase, not in a get request
         with open('/Users/sathya/Documents/pyonionoo/pyonionoo/summary') as f:
             for line in f.readlines():
                 router = Router(line)

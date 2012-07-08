@@ -17,17 +17,15 @@
 import cyclone.locale
 import cyclone.web
 
-from pyonionoo import views
+from pyonionoo import summary
 from pyonionoo import config
 
 class Application(cyclone.web.Application):
     def __init__(self, config_file):
         handlers = [
-            (r"/summary?(.+)",              views.IndexHandler)
+            (r"/summary?(.+)",              summary.SummaryHandler)
         ]
 
         settings = config.parse_config(config_file)
-
-        #settings["login_url"] = "/auth/login"
-        #settings["autoescape"] = None
+        
         cyclone.web.Application.__init__(self, handlers, **settings)
