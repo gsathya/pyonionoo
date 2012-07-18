@@ -16,8 +16,8 @@
 
 import cyclone.locale
 import cyclone.web
+import handlers.summary as summary
 
-from pyonionoo import summary
 from pyonionoo import config
 
 class Application(cyclone.web.Application):
