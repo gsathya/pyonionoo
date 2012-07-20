@@ -13,6 +13,7 @@ class Router:
         self.orport = None
         self.dirport = None
         self.flags = None
+        self.is_running = False
         self.consensus_weight = None
         self.country_code = None
         self.hostname = None
@@ -24,7 +25,7 @@ class Router:
         values = raw_content.split()
         if len(values) < 9:
             #raise Exception
-            pass
+            raise ValueError("Invalid router!")
         if values[0] == "r":
             self.is_relay = True
         self.nickname = values[1]
@@ -48,11 +49,14 @@ class Router:
         self.orport = int(values[6])
         self.dirport = int(values[7])
         self.flags = values[8].split(',')
+        for flag in self.flags:
+            if flag == "Running":
+                self.is_running = True
         self.consensus_weight = values[9]
         self.country_code = values[10]
         if values[11] != "null" : self.hostname = values[11]
         self.time_of_lookup = int(values[12])
-
+    
     def _parse_timestamp(self, content):
       """
       Parses a 'YYYY-MM-DD HH:MM:SS' entry.

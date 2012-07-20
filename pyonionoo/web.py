@@ -17,13 +17,15 @@
 import cyclone.locale
 import cyclone.web
 import handlers.summary as summary
+import handlers.detail as detail
 
 from pyonionoo import config
 
 class Application(cyclone.web.Application):
     def __init__(self, config_file):
         handlers = [
-            (r"/summary?(.+)",              summary.SummaryHandler)
+            (r"/summary?(.+)",              summary.SummaryHandler),
+            (r"/detail?(.+)",               detail.DetailHandler)
         ]
         
         settings = config.parse_config(config_file)
