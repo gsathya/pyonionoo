@@ -24,4 +24,4 @@ class ThreadPool:
         self.tasks.put((func, args, kargs))
 
     def wait_completion(self):
-        self.tasks.join(RDNS_LOOKUP_TIMEOUT)
+        self.tasks.join()

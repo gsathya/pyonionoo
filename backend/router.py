@@ -14,7 +14,6 @@ class Router:
         self.or_port = None
         self.flags = None
         self.consensus_weight = None
-        self.country_code = None
         self.hostname = None
         self.time_of_lookup = None
         self.is_relay = None
@@ -23,9 +22,24 @@ class Router:
         self.as_no = None
         self.as_name = None
         self.country = None
+        self.country_name = None
+        self.longitude = None
+        self.latitude = None
+        self.region_name = None #Always none
+        self.city = None
+        self.is_running = False
         self.as_db = as_db
         self.gi_db = gi_db
         
+    def _get_geoip_details(self):
+        data = self.gi_db.record_by_addr(self.ip)
+        if data:
+            self.country = data['country_code']
+            self.country_name = data['country_name']
+            self.city = data['city']
+            self.longitude = data['longitude']
+            self.latitude = data['latitude']
+
     def _get_as_details(self):
         try:
             value = self.as_db.org_by_addr(str(self.ip)).split()
@@ -56,7 +70,7 @@ class Router:
             self.or_port = values[6]
             self.dir_port = values[7]
             if self.gi_db:
-                self.country = self.gi_db.country_name_by_addr(self.ip)
+                self._get_geoip_details()
             if self.as_db:
                 self.as_no, self.as_name = self._get_as_details()
         if key == 's':
