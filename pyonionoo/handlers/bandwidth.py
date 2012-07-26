@@ -15,7 +15,7 @@ class BandwidthHandler(cyclone.web.RequestHandler):
         is_running, return_running = False, False
         return_country, return_search = False, False
 
-        routers = get_router.get_routers('/home/mchang01/HFOSS2012/pyonionoo/pyonionoo/summary')
+        routers = get_router.get_routers()
 
         for argument in self.request.arguments.iterkeys():
             if argument in ARGUMENTS:
