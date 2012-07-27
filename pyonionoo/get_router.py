@@ -7,24 +7,20 @@ ARGUMENTS = ['type', 'running', 'search', 'lookup', 'country', 'order', 'offset'
 def get_routers(arguments):
     
     routers = []
+    filtered_relays, filtered_bridges = [], []
     return_relays, return_bridges = True, True
-    hex_fingerprint = None
-    is_running, return_running = False, False
-    return_country, return_search = False, False
+    hex_fingerprint, running_filter = None, None
+    return_type, return_country, return_search = False, False, False
     relay_timestamp = datetime.datetime(1900, 1, 1, 1, 0)
     bridge_timestamp = datetime.datetime(1900, 1, 1, 1, 0)
-    filtered_relays, filtered_bridges = [], []
     
     for key, values in arguments.iteritems():
         if key in ARGUMENTS:
             if key == "running":
-                return_running = True
                 for value in values:
-                    if value == "true":
-                        is_running = True
-                    if value == "false":
-                        is_running = False
+                    running_filter = value
             if key == "type":
+                return_type = True
                 for value in values:
                     if value == "relay":
                         return_bridges = False
@@ -41,29 +37,29 @@ def get_routers(arguments):
                 for value in values:
                     return_search = True
                     search_input = value
-
+    
     with open('/home/mchang01/HFOSS2012/pyonionoo/pyonionoo/summary') as f:
 
         for line in f.readlines():
             router = Router(line)
             
             if router.is_relay and return_relays:
-                print "is relay"
                 dest = filtered_relays
                 time_dest = relay_timestamp
-            if not router.is_relay and return_bridges:
-                print "is bridge"
+            elif not router.is_relay and return_bridges:
                 dest = filtered_bridges
                 time_dest = bridge_timestamp
-            #else:
-            #    continue
-            if return_running:
-                if is_running:
-                    if router.is_running:
-                        dest.append(router)
-                else:
-                    if not router.is_running:
-                        dest.append(router)
+            else:
+                continue
+            if return_type:
+                dest.append(router)
+            elif running_filter:
+                if router.is_running == eval(running_filter.title()):
+                    dest.append(router)
+            elif hex_fingerprint:
+                if hex_fingerprint == router.fingerprint:
+                    dest.append(router)
+                    break
             elif return_country:
                 if router.country_code == country_code:
                     dest.append(router)
@@ -75,15 +71,12 @@ def get_routers(arguments):
                 if search_input in router.address:
                     dest.append(router)
             else:
-                if router.is_relay:
-                    filtered_relays.append(router)
-                if not router.is_relay:
-                    filtered_bridges.append(router)
-
+                dest.append(router)
+            
             current_router = router.time_published
             if current_router > time_dest:
                 time_dest = current_router
-        
+
         total_routers = (filtered_relays, filtered_bridges,
                          relay_timestamp, bridge_timestamp)
         return total_routers
