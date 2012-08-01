@@ -4,7 +4,9 @@ from pyonionoo.parser import Router
 
 ARGUMENTS = ['type', 'running', 'search', 'lookup', 'country', 'order', 'offset', 'limit']
 
-def get_routers(arguments):
+SUMMARY = '/home/mchang01/HFOSS2012/out/summary'
+
+def get_summary_router(arguments):
     
     routers = []
     filtered_relays, filtered_bridges = [], []
@@ -13,7 +15,7 @@ def get_routers(arguments):
     return_type, return_country, return_search = False, False, False
     relay_timestamp = datetime.datetime(1900, 1, 1, 1, 0)
     bridge_timestamp = datetime.datetime(1900, 1, 1, 1, 0)
-    
+    #TODO: Externalize filtering code?
     for key, values in arguments.iteritems():
         if key in ARGUMENTS:
             if key == "running":
@@ -38,8 +40,8 @@ def get_routers(arguments):
                     return_search = True
                     search_input = value
     
-    with open('/home/mchang01/HFOSS2012/pyonionoo/pyonionoo/summary') as f:
-
+    with open(SUMMARY) as f:
+        
         for line in f.readlines():
             router = Router(line)
             

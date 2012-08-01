@@ -10,6 +10,7 @@ ARGUMENTS = ['type', 'running', 'search', 'lookup', 'country', 'order', 'offset'
 
 class BandwidthHandler(cyclone.web.RequestHandler):
     def get(self, foo):
+        """
         return_relays, return_bridges= True, True
         hex_fingerprint = None
         is_running, return_running = False, False
@@ -44,6 +45,14 @@ class BandwidthHandler(cyclone.web.RequestHandler):
                     return_search = True
             else:
                 raise ValueError("Invalid Argument!")        
+            """
+
+        user_arguments = self.request.arguments
+        routers = get_router.get_routers(user_arguments)
+
+        response = {}
+        relays, bridges = [], []
+        filtered_relays, filtered_bridges, relay_timestamp, bridge_timestamp = routers
 
         for router in routers:
             if router.is_relay and return_relays:
@@ -56,3 +65,46 @@ class BandwidthHandler(cyclone.web.RequestHandler):
                 3_months_info = {}
                 1_year_info = {}
                 5_years_info = {}
+                3_day_info['first'] = 
+                3_day_info['last'] =
+                3_day_info['interval'] = 
+                3_day_info['factor'] = 
+                3_day_info['count'] = 
+                3_day_info['values'] = 
+                1_week_info['first'] = 
+                1_week_info['last'] = 
+                1_week_info['interval'] = 
+                1_week_info['factor'] = 
+                1_week_info['count'] = 
+                1_week_info['values'] = 
+                1_month_info['first'] = 
+                1_month_info['last'] = 
+                1_month_info['interval'] = 
+                1_month_info['factor'] = 
+                1_month_info['count'] = 
+                1_month_info['values'] = 
+                3_months_info['first'] = 
+                3_months_info['last'] = 
+                3_months_info['interval'] = 
+                3_months_info['factor'] = 
+                3_months_info['count'] = 
+                3_months_info['values'] = 
+                1_year_info['first'] = 
+                1_year_info['last'] = 
+                1_year_info['interval'] = 
+                1_year_info['factor'] = 
+                1_year_info['count'] = 
+                1_year_info['values'] = 
+                5_years_info['first'] = 
+                5_years_info['last'] = 
+                5_years_info['interval'] = 
+                5_years_info['factor'] = 
+                5_years_info['count'] = 
+                5_years_info['values'] = 
+                write_history_info['3 days'] = 3_day_info
+                write_history_info['1 week'] = 1_week_info
+                write_history_info['1 month'] = 1_month_info
+                write_history_info['3 months'] = 3_months_info
+                write_history_info['1 year'] = 1_year_info
+                write_history_info['5 years'] = 5_years_info
+                relay_info['write_history'] = 

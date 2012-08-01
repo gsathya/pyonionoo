@@ -1,7 +1,6 @@
 import sys
-import json
 import datetime
-import pyonionoo.get_router as get_router
+import pyonionoo.database as database
 
 import cyclone.escape
 import cyclone.web
@@ -17,27 +16,16 @@ class SummaryHandler(cyclone.web.RequestHandler):
     def get(self, foo):
 
         user_arguments = self.request.arguments
-        routers = get_router.get_routers(user_arguments)
-        
+        routers = database.get_summary_router(user_arguments)
+
         response = {}
         relays, bridges = [], []
         filtered_relays, filtered_bridges, relay_timestamp, bridge_timestamp = routers
-        if filtered_relays:
-            for relay in filtered_relays:
-                relay_info = {}
-                relay_info["n"] = relay.nickname
-                relay_info["f"] = relay.fingerprint
-                relay_info["a"] = [relay.address]
-                relay_info["r"] = relay.is_running
-                relays.append(relay_info)
-        if filtered_bridges:
-            for bridge in filtered_bridges:
-                bridge_info = {}
-                bridge_info["n"] = bridge.nickname
-                bridge_info["f"] = bridge.fingerprint
-                bridge_info["a"] = [bridge.address]
-                bridge_info["r"] = bridge.is_running
-                bridges.append(bridge_info)
+        
+        for (src, dest) in [(filtered_relays, relays),(filtered_bridges, bridges)]:
+            for router in src:
+                dest.append({'n': router.nickname, 'f': router.fingerprint, 'a': [router.address], 'r': router.is_running})
+
 
         if relays:
             response['relays'] = relays

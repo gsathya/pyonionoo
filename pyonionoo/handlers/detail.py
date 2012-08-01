@@ -1,6 +1,6 @@
 import sys
 import datetime
-import pyonionoo.get_router as get_router
+import pyonionoo.database as get_router
 
 import cyclone.escape
 import cyclone.web
