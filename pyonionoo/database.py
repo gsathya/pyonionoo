@@ -47,8 +47,6 @@ id_of_row INTEGER,
 flag STRING
 """
 
-CURSOR = None
-
 def _create_table(conn, tbl_name, schema):
     """
     Create a database table; drop a table by the same name if it already
@@ -84,8 +82,6 @@ def database():
     TODO:  Make this a single atomic transaction.
     """
 
-    global CURSOR
-    #---------------------------------------------------------------------------------    
     conn = sqlite3.connect('summary.db')
     CURSOR = conn.cursor()
 
