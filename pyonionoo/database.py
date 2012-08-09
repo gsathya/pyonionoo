@@ -78,7 +78,9 @@ def database():
     """
 
     conn = sqlite3.connect('summary.db')
-    CURSOR = conn.cursor()
+
+    # We will need name-based access to the rows.
+    conn.row_factory = sqlite3.Row
 
     # Create the tables.
     _create_table(conn, summary_tbl_name, summary_schema)
@@ -95,6 +97,8 @@ def database():
     # selects, because the rowid attribute of the cursor is set to that
     # id field right after we execute the (individual) insert statements.
     with open(SUMMARY) as f:
+        CURSOR = conn.cursor()
+
         for line in f.readlines():
             router = Router(line)
             
@@ -134,14 +138,12 @@ def get_summary_routers(
 
     @rtype: tuple.
     @return: tuple of form (relays, bridges, relays_time, bridges_time), where
-        * relays (bridges) is a list of tuples, each of which consists of the
-          various attributes.
+        * relays (bridges) is a list of sqlite3.Row, each of which consists of the
+          various attributes.  The important part is that each element of
+          relays (bridges) can be treated as a dictionary, with keys
+          the same as the database fields.
         * relays_time (bridges_time) is a datetime object with the most
           recent timestamp of the relay descriptors in relays.
-
-    TODO:  we need to return a dictionary or named tuple, not an unnamed
-    tuple, so that our handlers don't have to know about the database
-    schema.
     """
     
     conn = database()
@@ -155,6 +157,20 @@ def get_summary_routers(
     # some subset (possibly empty) of {'running', 'type', 'lookup', 'country'}.
     clauses = []
     if search_filter:
+        # We have to do some heuristics here, because the search filters
+        # do not come with anything to identify which field they correspond
+        # to.  E.g., the request search=ffa means any relay with nickname
+        # starting with 'ffa' or fingerprint starting with 'ffa' or '$ffa'.
+
+        # Actually, this is a moderately painful parameter to implement.
+        # Testing for an IP address probably means using regular expressions.
+        # SQLite doesn't suppor them without a user-defined function.  
+        # Matching against a Python RE is easy to do, but then we have
+        # to have a where clause that matches against the beginning of a
+        # field value, and SQLite doesn't appear to support such a search
+        # (unless, of course, you want to write a user-defined match()
+        # function).
+
         pass
     else:
         if running_filter != None:

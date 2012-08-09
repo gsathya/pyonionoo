@@ -28,7 +28,7 @@ def parse(arguments):
     country_filter = None
 
     # TODO:  Handle 'search' parameter.
-    search_filter = False
+    search_filter = None
 
     # Ordering offset and limit.
     order_field = None
@@ -66,8 +66,15 @@ def parse(arguments):
                 hex_fingerprint_filter = values[0]
             if key == "country":
                 country_filter = values[0]
+
+            # XXX: The protocol allows a list of search terms.  In a URL-based
+            # GET request, these would appear as search=term1&search=term2...,
+            # and then values would be [term1, term2,...].  But the protocol
+            # specifies that multiple terms appear as a single argument for
+            # the search parameter, which is then given to us as a single
+            # (space-separated) string.
             if key == "search":
-                raise NotImplementedError('search not yet implemented.')
+                search_filter = values.split()
 
             # TODO:  Handle list of ordering fields.
             if key == "order":
