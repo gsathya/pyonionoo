@@ -1,11 +1,23 @@
 import datetime
+import os
 import sqlite3
+import time
 
 from pyonionoo.parser import Router
 
 # Summary document that will be read into an SQLite database.  This should
 # probably be defined in a configuration file somewhere.
 SUMMARY = 'summary'
+
+# Name of the SQLite database.  This should be defined in a configuration file
+# somewhere.  And it should be ':memory:', not a file.  BUT:  it seems that
+# (1) sqlite3.Connection objects are not thread-safe, and (2) if different
+# threads connect() to ':memory:', they each get their own in-memory database.
+# We don't know how to fix this yet.
+DBNAME = 'summary.db'
+
+# Time at which we created the sqlite database from the summary file.
+DB_CREATION_TIME = None
 
 # Database schemas.
 # Summary database:  in conjunction with addresses and flags, holds the
@@ -45,7 +57,7 @@ flag STRING
 def _create_table(conn, tbl_name, schema):
     """
     Create a database table; drop a table by the same name if it already
-    exists.
+    exists.  This function does not commit the table creation instructions.
 
     @type conn: sqlite3.Connector
     @param conn:  open database connection.
@@ -63,11 +75,22 @@ def _create_table(conn, tbl_name, schema):
     cursor.execute('DROP TABLE IF EXISTS {}'.format(tbl_name))
     cursor.execute('CREATE TABLE {} ({})'.format(tbl_name, schema))
 
+    return
+
+def create_database():
+    conn = sqlite3.connect(DBNAME)
+
+    # Create the tables.
+    _create_table(conn, summary_tbl_name, summary_schema)
+    _create_table(conn, flags_tbl_name, flags_schema)
+    _create_table(conn, addresses_tbl_name, addresses_schema)
+
     conn.commit()
 
     return
 
-def database():
+
+def update_database():
     """
     Create the database.
 
@@ -77,15 +100,22 @@ def database():
     TODO:  Make this a single atomic transaction.
     """
 
-    conn = sqlite3.connect('summary.db')
+    global DB_CREATION_TIME
 
-    # We will need name-based access to the rows.
-    conn.row_factory = sqlite3.Row
+    print "Updating database."
 
-    # Create the tables.
-    _create_table(conn, summary_tbl_name, summary_schema)
-    _create_table(conn, flags_tbl_name, flags_schema)
-    _create_table(conn, addresses_tbl_name, addresses_schema)
+    # If we understand transactions properly, this update process is
+    # a single transaction that allows reads of the "un-updated"
+    # database; when the transaction is committed, future reads
+    # are from the updated database.  This seems consistent with
+    # the documentation for sqlite3.connect().
+    conn = sqlite3.connect(DBNAME, isolation_level='IMMEDIATE')
+
+    # First delete all records.
+    CURSOR = conn.cursor()
+    CURSOR.execute('DELETE FROM {}'.format(summary_tbl_name))
+    CURSOR.execute('DELETE FROM {}'.format(flags_tbl_name))
+    CURSOR.execute('DELETE FROM {}'.format(addresses_tbl_name))
 
     # Create the summary database.  We could accumulate all the router tuples
     # and then insert them with an executemany(...) in one go, except that
@@ -97,7 +127,6 @@ def database():
     # selects, because the rowid attribute of the cursor is set to that
     # id field right after we execute the (individual) insert statements.
     with open(SUMMARY) as f:
-        CURSOR = conn.cursor()
 
         for line in f.readlines():
             router = Router(line)
@@ -127,6 +156,21 @@ def database():
 
         conn.commit()
 
+    DB_CREATION_TIME = time.time()
+
+    return conn
+
+def get_database():
+    # Update the database if it is out of date.  This totally screws whoever
+    # made the request, because it will take too long.  But it seems to
+    # mirror what is done in the Java-based Onionoo implementation.
+    print 'Current time: {}'.format(DB_CREATION_TIME)
+    print 'summary file time:  {}'.format(os.stat(SUMMARY).st_mtime)
+    if DB_CREATION_TIME < os.stat(SUMMARY).st_mtime:
+        update_database()
+
+    conn = sqlite3.connect(DBNAME)
+    conn.row_factory = sqlite3.Row
     return conn
 
 def get_summary_routers(
@@ -146,7 +190,7 @@ def get_summary_routers(
           recent timestamp of the relay descriptors in relays.
     """
     
-    conn = database()
+    conn = get_database()
 
     # Timestamps of most recent relay/bridge in the returned set.
     relay_timestamp = datetime.datetime(1900, 1, 1, 1, 0)

@@ -19,7 +19,7 @@ import cyclone.web
 import handlers.summary as summary
 import handlers.detail as detail
 
-from pyonionoo import config
+from pyonionoo import config, database
 
 class Application(cyclone.web.Application):
     def __init__(self, config_file):
@@ -31,3 +31,6 @@ class Application(cyclone.web.Application):
         settings = config.parse_config(config_file)
         
         cyclone.web.Application.__init__(self, handlers, **settings)
+
+        database.create_database()
+        database.update_database()
