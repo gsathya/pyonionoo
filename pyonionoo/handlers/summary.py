@@ -1,6 +1,5 @@
 import sys
 import datetime
-import pyonionoo.database as database
 
 import cyclone.escape
 import cyclone.web
@@ -8,6 +7,8 @@ import cyclone.web
 from twisted.internet import defer, reactor
 from twisted.python import log
 
+import pyonionoo.handlers.arguments as arguments
+import pyonionoo.database as database
 from pyonionoo.parser import Router
 
 ARGUMENTS = ['type', 'running', 'search', 'lookup', 'country', 'order', 'offset', 'limit']
@@ -16,7 +17,7 @@ class SummaryHandler(cyclone.web.RequestHandler):
     def get(self, foo):
 
         user_arguments = self.request.arguments
-        routers = database.get_summary_routers(user_arguments)
+        routers = database.get_summary_routers(**arguments.parse(user_arguments))
 
         response = {}
         relays, bridges = [], []

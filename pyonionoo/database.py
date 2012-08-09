@@ -108,8 +108,11 @@ def database():
             # parser.Router.consensus_weight is a string???
             router_tuple = (router_type, router.nickname, router.fingerprint, router.is_running, router.time_published, router.orport, router.dirport, int(router.consensus_weight), router.country_code, router.hostname, router.time_of_lookup)
 
-            # TODO: Record this insert statement so that SQLite doesn't have
-            # to compile it each time.
+            # TODO: Determine whether sqlite3 optimizes by remembering
+            # this insert command and not parsing it every time it sees
+            # it.  This is mentioned in PEP 249, but we aren't sure where
+            # the PEP says that implementations might optimize in this way,
+            # or might allow users to optimize in this way.
             CURSOR.execute("INSERT INTO summary ('type', 'nickname', 'fingerprint', 'running', 'time_published', 'OR_port', 'dir_port', 'consensus_weight', 'country_code', 'hostname', 'time_lookup') VALUES (?,?,?,?,?,?,?,?,?,?,?)", router_tuple)
             id_num = CURSOR.lastrowid
 
@@ -127,12 +130,12 @@ def database():
 
     return conn
 
-def get_summary_routers(arguments):
+def get_summary_routers(
+        running_filter=None, type_filter=None, hex_fingerprint_filter=None,
+        country_filter=None, search_filter=None,
+        order_field=None, order_asc=True, offset_value=None, limit_value=None):
     """
     Get summary document according to request parameters.
-
-    @type arguments: dict of string -> list of string.
-    @param arguments:  dictionary mapping request parameters to values.
 
     @rtype: tuple.
     @return: tuple of form (relays, bridges, relays_time, bridges_time), where
@@ -148,94 +151,15 @@ def get_summary_routers(arguments):
     
     conn = database()
 
-    # These variables will be assigned non-None values if there is a
-    # corresponding request parameter (i.e., None means that the corresponding
-    # request parameter is not present at all).
-    running_filter = None
-    type_filter = None
-    hex_fingerprint_filter = None
-    country_filter = None
-
-    return_relays, return_bridges = True, True
-    # hex_fingerprint, running_filter = None, None
-    return_type, return_country, return_search = False, False, False
-    # asc_cw, desc_cw = False, False
-
     # Timestamps of most recent relay/bridge in the returned set.
     relay_timestamp = datetime.datetime(1900, 1, 1, 1, 0)
     bridge_timestamp = datetime.datetime(1900, 1, 1, 1, 0)
-
-    # Ordering offset and limit.
-    order_flag = None
-    offset_value = None
-    limit_value = None
-
-    # Parse request arguments.
-    # TODO:  If a user submits a request with, e.g., two values for running
-    # (a boolean flag), what should we do?  Right now we just use the first
-    # argument.
-    for key, values in arguments.iteritems():
-        if key in ARGUMENTS:
-            if key == "running":
-                value = values[0]
-                if value.lower() == 'true':
-                    running_filter = True
-                elif value.lower() == 'false':
-                    running_filter = False
-                else:
-                    raise ValueError(
-                        'Invalid argument to running parameter: {}.'.format(
-                            value))
-            if key == "type":
-                value = values[0]
-                if value == 'relay':
-                    type_filter = 'r'
-                elif value == 'bridge':
-                    type_filter = 'b'
-                else:
-                    raise ValueError(
-                        'Invalid argument to type parameter: {}.'.format(
-                            value))
-            if key == "lookup":
-                hex_fingerprint_filter = values[0]
-            if key == "country":
-                country_filter = values[0]
-            if key == "search":
-                for value in values:
-                    return_search = True
-                    search_input = value
-
-            # TODO:  Handle list of ordering fields.
-            if key == "order":
-                order_flag = True
-                value = values[0]
-                order_asc = (value[0] != '-')
-                if value[0] == '-':
-                    value = value[1:]
-                if value == "consensus_weight":
-                    order_field = 'consensus_weight'
-                else:
-                    raise ValueError('Invalid order argument: {}'.format(value))
-
-            if key == 'offset':
-                value = values[0]
-                try:
-                    offset_value = int(value)
-                except ValueError:
-                    raise ValueError('Invalid offset argument: {}'.format(value))
-
-            if key == 'limit':
-                value = values[0]
-                try:
-                    limit_value = int(value)
-                except ValueError:
-                    raise ValueError('Invalid limit argument: {}'.format(value))
 
     # Build up a WHERE clause based on the request parameters.  We only
     # consider the case in which the client specifies 'search' or
     # some subset (possibly empty) of {'running', 'type', 'lookup', 'country'}.
     clauses = []
-    if return_search:
+    if search_filter:
         pass
     else:
         if running_filter != None:
@@ -250,7 +174,7 @@ def get_summary_routers(arguments):
 
     # Construct the ORDER, LIMIT, and OFFSET clauses.
     order_clause = ''
-    if order_flag:
+    if order_field != None:
         order_clause = 'ORDER BY {} {}'.format(order_field, 
                 'ASC' if order_asc else 'DESC')
     limit_clause = ''
