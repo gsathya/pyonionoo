@@ -3,11 +3,6 @@ import sqlite3
 
 from pyonionoo.parser import Router
 
-# Request parameters.
-# TODO:  Request parameters should probably be handled by the handlers, not
-# the database module.
-ARGUMENTS = ['type', 'running', 'search', 'lookup', 'country', 'order', 'offset', 'limit']
-
 # Summary document that will be read into an SQLite database.  This should
 # probably be defined in a configuration file somewhere.
 SUMMARY = 'summary'
