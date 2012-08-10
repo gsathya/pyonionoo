@@ -4,7 +4,7 @@ import datetime
 import cyclone.escape
 import cyclone.web
 
-from twisted.internet import defer, reactor
+from twisted.internet import threads, defer, reactor
 from twisted.python import log
 
 import pyonionoo.handlers.arguments as arguments
@@ -14,7 +14,21 @@ from pyonionoo.parser import Router
 ARGUMENTS = ['type', 'running', 'search', 'lookup', 'country', 'order', 'offset', 'limit']
 
 class SummaryHandler(cyclone.web.RequestHandler):
-    def get(self, foo):
+
+    @defer.inlineCallbacks
+    def get(self):
+        """
+        Respond to a GET request.  We construct the response in a different
+        thread to avoid blocking.  deferToThread returns a Deferred object,
+        which we can yield immediately; Cyclone then knows to invoke get()
+        again when _get_results has finished, and resopnse will be the
+        return value of _get_results (i.e., the dictionary of results).
+        """
+        d = threads.deferToThread(self._get_results)
+        response = yield d
+        self.write(response)
+        
+    def _get_results(self):
 
         user_arguments = self.request.arguments
         routers = database.get_summary_routers(**arguments.parse(user_arguments))
@@ -39,5 +53,5 @@ class SummaryHandler(cyclone.web.RequestHandler):
             response['bridges'] = bridges
             response['bridges_published'] = bridge_timestamp.strftime("%Y-%m-%d %H:%M:%S")
 
-        self.write(response)
+        return response
 

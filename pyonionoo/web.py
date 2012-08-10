@@ -24,8 +24,8 @@ from pyonionoo import config, database
 class Application(cyclone.web.Application):
     def __init__(self, config_file):
         handlers = [
-            (r"/summary?(.+)",              summary.SummaryHandler),
-            (r"/detail?(.+)",               detail.DetailHandler)
+            (r"/summary",              summary.SummaryHandler),
+            (r"/detail",               detail.DetailHandler)
         ]
         
         settings = config.parse_config(config_file)
