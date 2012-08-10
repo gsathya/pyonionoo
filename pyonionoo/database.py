@@ -1,6 +1,7 @@
 import datetime
 import os
 import sqlite3
+import threading
 import time
 
 from pyonionoo.parser import Router
@@ -13,11 +14,24 @@ SUMMARY = 'summary'
 # somewhere.  And it should be ':memory:', not a file.  BUT:  it seems that
 # (1) sqlite3.Connection objects are not thread-safe, and (2) if different
 # threads connect() to ':memory:', they each get their own in-memory database.
-# We don't know how to fix this yet.
+# We don't know how to fix this yet, but it must be possible.
+# Thread-safety is relevant here, because each request should be handled
+# in its own thread so the application doesn't block while processing
+# a single request.  Asynchronous handlers (a la twisted and cyclone) don't
+# really seem to do the job, because we cannot incrementally return
+# a JSON object; we need all of the data in order to construct the
+# JSON object, and so these requests are inherently synchronous.
 DBNAME = 'summary.db'
 
 # Time at which we created the sqlite database from the summary file.
-DB_CREATION_TIME = None
+DB_CREATION_TIME = -1
+
+# Interval (in seconds) that we check to update the database.  See
+# freshen_database().
+DB_UPDATE_INTERVAL = 30*60
+
+# The timer object used for updating the database.
+FRESHEN_TIMER = None
 
 # Database schemas.
 # Summary database:  in conjunction with addresses and flags, holds the
@@ -87,6 +101,8 @@ def create_database():
 
     conn.commit()
 
+    freshen_database()
+
     return
 
 
@@ -97,18 +113,19 @@ def update_database():
     rtype: sqlite3.Connection
     return:  A connection object for the database that has been created.
 
-    TODO:  Make this a single atomic transaction.
+    This operation operates as a single transaction.  Therefore,
+    the database can be read by other requests while it is being
+    performed, and those reads will correspond to the "un-updated"
+    database.  Once this function completes, all future reads will be
+    from the "updated" database.
     """
 
     global DB_CREATION_TIME
 
     print "Updating database."
 
-    # If we understand transactions properly, this update process is
-    # a single transaction that allows reads of the "un-updated"
-    # database; when the transaction is committed, future reads
-    # are from the updated database.  This seems consistent with
-    # the documentation for sqlite3.connect().
+    # It seems that the default isolation_level is probably OK for
+    # all of this to be done in a single transaction.
     conn = sqlite3.connect(DBNAME, isolation_level='IMMEDIATE')
 
     # First delete all records.
@@ -152,23 +169,26 @@ def update_database():
                 flag_info = (id_num, flag)
                 CURSOR.execute('INSERT INTO flags (id_of_row, flag) VALUES (?,?)', flag_info)
             
-    #--------------------------------------------------------------------------------
-
         conn.commit()
 
     DB_CREATION_TIME = time.time()
 
     return conn
 
-def get_database():
-    # Update the database if it is out of date.  This totally screws whoever
-    # made the request, because it will take too long.  But it seems to
-    # mirror what is done in the Java-based Onionoo implementation.
-    print 'Current time: {}'.format(DB_CREATION_TIME)
-    print 'summary file time:  {}'.format(os.stat(SUMMARY).st_mtime)
+def freshen_database():
+    global FRESHEN_TIMER
+
     if DB_CREATION_TIME < os.stat(SUMMARY).st_mtime:
         update_database()
 
+    FRESHEN_TIMER = threading.Timer(
+            DB_UPDATE_INTERVAL, freshen_database)
+    FRESHEN_TIMER.start()
+
+def cancel_freshen():
+    FRESHEN_TIMER.cancel()
+
+def get_database():
     conn = sqlite3.connect(DBNAME)
     conn.row_factory = sqlite3.Row
     return conn

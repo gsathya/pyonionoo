@@ -33,4 +33,9 @@ class Application(cyclone.web.Application):
         cyclone.web.Application.__init__(self, handlers, **settings)
 
         database.create_database()
-        database.update_database()
+
+    def stopFactory(self):
+        print 'stopFactory'
+        database.cancel_freshen()
+        cyclone.web.Application.stopFactory(self)
+
