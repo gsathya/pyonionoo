@@ -28,7 +28,7 @@ DB_CREATION_TIME = -1
 
 # Interval (in seconds) that we check to update the database.  See
 # freshen_database().
-DB_UPDATE_INTERVAL = 30*60
+DB_UPDATE_INTERVAL = 60
 
 # The timer object used for updating the database.
 FRESHEN_TIMER = None
