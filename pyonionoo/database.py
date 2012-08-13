@@ -86,8 +86,8 @@ def _create_table(conn, tbl_name, schema):
     cursor = conn.cursor()
 
     # Can only use placeholders in select statements?
-    cursor.execute('DROP TABLE IF EXISTS {}'.format(tbl_name))
-    cursor.execute('CREATE TABLE {} ({})'.format(tbl_name, schema))
+    cursor.execute('DROP TABLE IF EXISTS %s' % tbl_name)
+    cursor.execute('CREATE TABLE %s (%s)' % (tbl_name, schema))
 
     return
 
@@ -130,9 +130,9 @@ def update_database():
 
     # First delete all records.
     CURSOR = conn.cursor()
-    CURSOR.execute('DELETE FROM {}'.format(summary_tbl_name))
-    CURSOR.execute('DELETE FROM {}'.format(flags_tbl_name))
-    CURSOR.execute('DELETE FROM {}'.format(addresses_tbl_name))
+    CURSOR.execute('DELETE FROM %s' % summary_tbl_name)
+    CURSOR.execute('DELETE FROM %s' % flags_tbl_name)
+    CURSOR.execute('DELETE FROM %s' %addresses_tbl_name)
 
     # Create the summary database.  We could accumulate all the router tuples
     # and then insert them with an executemany(...) in one go, except that
@@ -143,6 +143,11 @@ def update_database():
     # field in the flags/addresses table.  Here we can avoid all those
     # selects, because the rowid attribute of the cursor is set to that
     # id field right after we execute the (individual) insert statements.
+    fields = ('type', 'nickname', 'fingerprint', 'running', 
+            'time_published', 'OR_port', 'dir_port', 'consensus_weight', 
+            'country_code', 'hostname', 'time_lookup')
+    insert_stmt = ('insert into %s (%s) values (%s)' %
+            (summary_tbl_name, ','.join(fields), ','.join(['?']*len(fields))))
     with open(SUMMARY) as f:
 
         for line in f.readlines():
@@ -158,7 +163,7 @@ def update_database():
             # it.  This is mentioned in PEP 249, but we aren't sure where
             # the PEP says that implementations might optimize in this way,
             # or might allow users to optimize in this way.
-            CURSOR.execute("INSERT INTO summary ('type', 'nickname', 'fingerprint', 'running', 'time_published', 'OR_port', 'dir_port', 'consensus_weight', 'country_code', 'hostname', 'time_lookup') VALUES (?,?,?,?,?,?,?,?,?,?,?)", router_tuple)
+            CURSOR.execute(insert_stmt, router_tuple)
             id_num = CURSOR.lastrowid
 
             address_info = (id_num, router.address)
@@ -193,28 +198,13 @@ def get_database():
     conn.row_factory = sqlite3.Row
     return conn
 
-def get_summary_routers(
+def query_summary_tbl(
         running_filter=None, type_filter=None, hex_fingerprint_filter=None,
         country_filter=None, search_filter=None,
-        order_field=None, order_asc=True, offset_value=None, limit_value=None):
-    """
-    Get summary document according to request parameters.
+        order_field=None, order_asc=True, offset_value=None, limit_value=None,
+        fields=('fingerprint',)):
 
-    @rtype: tuple.
-    @return: tuple of form (relays, bridges, relays_time, bridges_time), where
-        * relays (bridges) is a list of sqlite3.Row, each of which consists of the
-          various attributes.  The important part is that each element of
-          relays (bridges) can be treated as a dictionary, with keys
-          the same as the database fields.
-        * relays_time (bridges_time) is a datetime object with the most
-          recent timestamp of the relay descriptors in relays.
-    """
-    
     conn = get_database()
-
-    # Timestamps of most recent relay/bridge in the returned set.
-    relay_timestamp = datetime.datetime(1900, 1, 1, 1, 0)
-    bridge_timestamp = datetime.datetime(1900, 1, 1, 1, 0)
 
     # Build up a WHERE clause based on the request parameters.  We only
     # consider the case in which the client specifies 'search' or
@@ -238,30 +228,62 @@ def get_summary_routers(
         pass
     else:
         if running_filter != None:
-            clauses.append("running = {}".format(int(running_filter)))
+            clauses.append("running = %s" % int(running_filter))
         if type_filter != None:
-            clauses.append("type = '{}'".format(type_filter))
+            clauses.append("type = '%s'" % type_filter)
         if hex_fingerprint_filter != None:
-            clauses.append("fingerprint = '{}'".format(hex_fingerprint_filter))
+            clauses.append("fingerprint = '%s'" % hex_fingerprint_filter)
         if country_filter != None:
-            clauses.append("country = '{}'".format(country_filter))
-    where_clause = 'WHERE {}'.format(' and '.join(clauses)) if clauses else ''
+            clauses.append("country = '%s'" % country_filter)
+    where_clause = ('WHERE %s' % ' and '.join(clauses)) if clauses else ''
 
     # Construct the ORDER, LIMIT, and OFFSET clauses.
     order_clause = ''
     if order_field != None:
-        order_clause = 'ORDER BY {} {}'.format(order_field, 
+        order_clause = 'ORDER BY %s %s' % (order_field, 
                 'ASC' if order_asc else 'DESC')
     limit_clause = ''
     if limit_value != None:
-        limit_clause = 'LIMIT {}'.format(limit_value)
+        limit_clause = 'LIMIT %s' % limit_value
     offset_clause = ''
     if offset_value != None:
-        offset_clause = 'OFFSET {}'.format(offset_value)
+        offset_clause = 'OFFSET %s' % offset_value
+
+    cursor = conn.cursor()
+    cursor.execute('SELECT %s FROM summary %s %s %s %s' % (','.join(fields), 
+        where_clause, order_clause, limit_clause, offset_clause))
+
+    return cursor.fetchall()
+
+
+def get_summary_routers(
+        running_filter=None, type_filter=None, hex_fingerprint_filter=None,
+        country_filter=None, search_filter=None,
+        order_field=None, order_asc=True, offset_value=None, limit_value=None):
+    """
+    Get summary document according to request parameters.
+
+    @rtype: tuple.
+    @return: tuple of form (relays, bridges, relays_time, bridges_time), where
+        * relays (bridges) is a list of sqlite3.Row, each of which consists of the
+          various attributes.  The important part is that each element of
+          relays (bridges) can be treated as a dictionary, with keys
+          the same as the database fields.
+        * relays_time (bridges_time) is a datetime object with the most
+          recent timestamp of the relay descriptors in relays.
+    """
+
+    # Timestamps of most recent relay/bridge in the returned set.
+    relay_timestamp = datetime.datetime(1900, 1, 1, 1, 0)
+    bridge_timestamp = datetime.datetime(1900, 1, 1, 1, 0)
 
     filtered_relays, filtered_bridges = [], []
-    cursor = conn.cursor()
-    for row in cursor.execute('SELECT type, nickname, fingerprint, running, country_code, time_published, consensus_weight FROM summary {} {} {} {}'.format(where_clause, order_clause, limit_clause, offset_clause)):
+    fields = ('type', 'nickname', 'fingerprint', 'running', 'country_code', 
+            'time_published', 'consensus_weight')
+    for row in query_summary_tbl(
+            running_filter, type_filter, hex_fingerprint_filter,
+            country_filter, search_filter,
+            order_field, order_asc, offset_value, limit_value, fields):
 
         # Set the destination list for this router.
         dest = filtered_relays if row[0] == 'r' else filtered_bridges
