@@ -1,4 +1,5 @@
 import datetime
+import logging
 import os
 import sqlite3
 import threading
@@ -6,9 +7,13 @@ import time
 
 from pyonionoo.parser import Router
 
+# Metrics out/ directory.
+METRICS_OUT = None
+
 # Summary document that will be read into an SQLite database.  This should
 # probably be defined in a configuration file somewhere.
-SUMMARY = 'summary'
+SUMMARY_FILE = 'summary'
+SUMMARY = None
 
 # Name of the SQLite database.  This should be defined in a configuration file
 # somewhere.  And it should be ':memory:', not a file.  BUT:  it seems that
@@ -91,7 +96,12 @@ def _create_table(conn, tbl_name, schema):
 
     return
 
-def create_database():
+def create_database(metrics_out):
+    global METRICS_OUT, SUMMARY
+
+    METRICS_OUT = metrics_out
+    SUMMARY = os.path.join(METRICS_OUT, SUMMARY_FILE)
+
     conn = sqlite3.connect(DBNAME)
 
     # Create the tables.
@@ -122,7 +132,7 @@ def update_database():
 
     global DB_CREATION_TIME
 
-    print "Updating database."
+    logging.info("Updating database.")
 
     # It seems that the default isolation_level is probably OK for
     # all of this to be done in a single transaction.
@@ -173,8 +183,8 @@ def update_database():
             for flag in flags:
                 flag_info = (id_num, flag)
                 CURSOR.execute('INSERT INTO flags (id_of_row, flag) VALUES (?,?)', flag_info)
-            
-        conn.commit()
+
+    conn.commit()
 
     DB_CREATION_TIME = time.time()
 

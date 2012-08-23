@@ -14,6 +14,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import logging
+
 import cyclone.locale
 import cyclone.web
 import handlers.summary as summary
@@ -27,12 +29,16 @@ class Application(cyclone.web.Application):
             (r"/summary",              summary.SummaryHandler),
             (r"/detail",               detail.DetailHandler)
         ]
+
+        logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO)
         
         settings = config.parse_config(config_file)
+        if not settings['metrics_out']:
+            raise ValueError
+
+        database.create_database(settings['metrics_out'])
         
         cyclone.web.Application.__init__(self, handlers, **settings)
-
-        database.create_database()
 
     def stopFactory(self):
         print 'stopFactory'
