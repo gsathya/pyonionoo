@@ -21,9 +21,6 @@ def parse_config(filename):
     # web server settings
     settings["debug"] = xget(cfg.getboolean, "server", "debug", False)
     settings["xheaders"] = xget(cfg.getboolean, "server", "xheaders", False)
-    settings["cookie_secret"] = cfg.get("server", "cookie_secret")
-    settings["xsrf_cookies"] = xget(cfg.getboolean, "server", "xsrf_cookies",
-                                    False)
 
     # get project's absolute path
     root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
