@@ -14,7 +14,6 @@ from pyonionoo.parser import Router
 ARGUMENTS = ['type', 'running', 'search', 'lookup', 'country', 'order', 'offset', 'limit']
 
 class SummaryHandler(cyclone.web.RequestHandler):
-
     @defer.inlineCallbacks
     def get(self):
         """
@@ -29,7 +28,6 @@ class SummaryHandler(cyclone.web.RequestHandler):
         self.write(response)
         
     def _get_results(self):
-
         user_arguments = self.request.arguments
         routers = database.get_summary_routers(**arguments.parse(user_arguments))
 
@@ -46,12 +44,12 @@ class SummaryHandler(cyclone.web.RequestHandler):
                     'r' : bool(router['running'])
                 })
 
-        if relays:
-            response['relays'] = relays
-            response['relays_published'] = relay_timestamp.strftime("%Y-%m-%d %H:%M:%S")
-        if bridges:
-            response['bridges'] = bridges
-            response['bridges_published'] = bridge_timestamp.strftime("%Y-%m-%d %H:%M:%S")
+        # response is a dict, so the order is not maintained. should the
+        # values in the response be in a specific order?
+        response['relays'] = relays
+        response['relays_published'] = relay_timestamp.strftime("%Y-%m-%d %H:%M:%S")
+        response['bridges'] = bridges
+        response['bridges_published'] = bridge_timestamp.strftime("%Y-%m-%d %H:%M:%S")
 
         return response
 
