@@ -61,6 +61,6 @@ def parse_config(filename):
     else:
         settings["mysql_settings"] = None
 
-    settings['metrics_out'] = xget(cfg.get, 'metrics', 'out_dir', None)
-
+    settings['metrics_out'] = xget(cfg.get, 'metrics', 'out_dir', '/tmp')
+    settings['summary_file'] = xget(cfg.get, 'metrics', 'summary_file', 'summary')
     return settings

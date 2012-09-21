@@ -2,7 +2,7 @@ import re
 import datetime
 
 class Router:
-    def __init__(self, raw_content):
+    def __init__(self):
         self.nickname = None
         self.fingerprint = None
         self.address = None
@@ -13,21 +13,21 @@ class Router:
         self.orport = None
         self.dirport = None
         self.flags = None
-        self.is_running = False
+        self.running = False
         self.consensus_weight = None
         self.country_code = None
         self.hostname = None
         self.time_of_lookup = None
-        self.is_relay = None
-        self._parse(raw_content)
+        self.type = None
 
-    def _parse(self, raw_content):
+    def parse(self, raw_content):
         values = raw_content.split()
         if len(values) < 9:
             #raise Exception
             raise ValueError("Invalid router!")
-        if values[0] == "r":
-            self.is_relay = True
+        if values[0] == "r": self.type = "r"
+        else: self.type = "b"
+
         self.nickname = values[1]
         self.fingerprint = values[2]
 
@@ -51,8 +51,8 @@ class Router:
         self.flags = values[8].split(',')
         for flag in self.flags:
             if flag == "Running":
-                self.is_running = True
-        self.consensus_weight = values[9]
+                self.running = True
+        self.consensus_weight = int(values[9])
         self.country_code = values[10]
         if values[11] != "null" : self.hostname = values[11]
         self.time_of_lookup = int(values[12])

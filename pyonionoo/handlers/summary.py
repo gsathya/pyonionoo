@@ -35,13 +35,12 @@ class SummaryHandler(cyclone.web.RequestHandler):
         relays, bridges = [], []
         filtered_relays, filtered_bridges, relay_timestamp, bridge_timestamp = routers
 
-        for (src, dest) in ((filtered_relays, relays), 
-                (filtered_bridges, bridges)):
+        for (src, dest) in ((filtered_relays, relays), (filtered_bridges, bridges)):
             for router in src:
                 dest.append({
-                    'n' : router['nickname'],
-                    'f' : router['fingerprint'],
-                    'r' : bool(router['running'])
+                    'n' : router.nickname,
+                    'f' : router.fingerprint,
+                    'r' : bool(router.running)
                 })
 
         # response is a dict, so the order is not maintained. should the

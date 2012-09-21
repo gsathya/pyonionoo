@@ -36,7 +36,7 @@ class Application(cyclone.web.Application):
         if not settings['metrics_out']:
             raise ValueError
 
-        database.create_database(settings['metrics_out'])
+        database.bootstrap_database(settings['metrics_out'], settings['summary_file'])
         
         cyclone.web.Application.__init__(self, handlers, **settings)
 
