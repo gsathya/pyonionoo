@@ -247,7 +247,7 @@ def query_summary_tbl(running_filter=None, type_filter=None, hex_fingerprint_fil
         if hex_fingerprint_filter:
             clauses.append("fingerprint = '%s'" % hex_fingerprint_filter)
         if country_filter:
-            clauses.append("country = '%s'" % country_filter)
+            clauses.append("country_code = '%s'" % country_filter)
     where_clause = ('WHERE %s' % ' and '.join(clauses)) if clauses else ''
 
     # Construct the ORDER, LIMIT, and OFFSET clauses.
