@@ -74,7 +74,7 @@ def parse(arguments):
             # the search parameter, which is then given to us as a single
             # (space-separated) string.
             if key == "search":
-                search_filter = values.split()
+                search_filter = values[0]
 
             # TODO:  Handle list of ordering fields.
             if key == "order":

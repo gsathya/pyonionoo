@@ -5,6 +5,7 @@ import sqlite3
 import threading
 import time
 
+import pyonionoo.utils as utils
 from pyonionoo.parser import Router
 
 # Name of the SQLite database.  This should be defined in a configuration file
@@ -45,29 +46,29 @@ TOTAL_ROWS = 0
 # will be made into an alias for rowid.
 summary_tbl_name = 'summary'
 summary_schema = """
-id INTEGER PRIMARY KEY, 
-type CHARACTER, 
-nickname STRING, 
-fingerprint STRING, 
-running BOOLEAN, 
-time_published STRING, 
-OR_port STRING, 
-dir_port STRING, 
-consensus_weight INTEGER, 
-country_code STRING, 
-hostname STRING, 
+id INTEGER PRIMARY KEY,
+type CHARACTER,
+nickname STRING,
+fingerprint STRING,
+running BOOLEAN,
+time_published STRING,
+OR_port STRING,
+dir_port STRING,
+consensus_weight INTEGER,
+country_code STRING,
+hostname STRING,
 time_lookup STRING
 """
 
 addresses_tbl_name = 'addresses'
 addresses_schema = """
-id_of_row INTEGER, 
+id_of_row INTEGER,
 address STRING
 """
 
 flags_tbl_name = 'flags'
 flags_schema = """
-id_of_row INTEGER, 
+id_of_row INTEGER,
 flag STRING
 """
 
@@ -122,13 +123,16 @@ def bootstrap_database(metrics_out, summary_file):
 
 def update_databases(summary_file=None):
     """
-    Updates all three databases information.
+    Updates all three databases.
 
     This operation operates as a single transaction.  Therefore,
     the database can be read by other requests while it is being
     performed, and those reads will correspond to the "un-updated"
     database.  Once this function completes, all future reads will be
     from the "updated" database.
+
+    @type summary_file: string
+    @param summary_file: full path to the summary file
     """
     global DB_CREATION_TIME, TABLE_ROWS
 
@@ -216,10 +220,24 @@ def update_databases(summary_file=None):
     FRESHEN_TIMER.start()
 
 def cancel_freshen():
+    """
+    Stop updating the database.
+    """
+
     FRESHEN_TIMER.cancel()
 
-def get_database_conn():
-    conn = sqlite3.connect(DBNAME)
+def get_database_conn(dbname=DBNAME):
+    """
+    Connect to a database.
+
+    @param type: string
+    @param dbname: name of the database
+
+    @rtype: sqlite3.Connection
+    @return: a Connection object
+    """
+
+    conn = sqlite3.connect(dbname)
     return conn
 
 def query_summary_tbl(running_filter=None, type_filter=None, hex_fingerprint_filter=None,
@@ -227,26 +245,26 @@ def query_summary_tbl(running_filter=None, type_filter=None, hex_fingerprint_fil
                       order_asc=True, offset_value=None, limit_value=None,
                       fields=('fingerprint',)):
     conn = get_database_conn()
+    cursor = conn.cursor()
 
     # Build up a WHERE clause based on the request parameters.  We only
     # consider the case in which the client specifies 'search' or
     # some subset (possibly empty) of {'running', 'type', 'lookup', 'country'}.
     clauses = []
     if search_filter:
-        # We have to do some heuristics here, because the search filters
-        # do not come with anything to identify which field they correspond
-        # to.  E.g., the request search=ffa means any relay with nickname
-        # starting with 'ffa' or fingerprint starting with 'ffa' or '$ffa'.
-
-        # Actually, this is a moderately painful parameter to implement.
-        # Testing for an IP address probably means using regular expressions.
-        # SQLite doesn't support them without a user-defined function.
-        # Matching against a Python RE is easy to do, but then we have
-        # to have a where clause that matches against the beginning of a
-        # field value, and SQLite doesn't appear to support such a search
-        # (unless, of course, you want to write a user-defined match()
-        # function).
-        pass
+        if utils.is_valid_ip_address(search_filter) or \
+                utils.is_valid_ipv6_address(search_filter):
+            logging.info("Search based on ip address")
+            cursor.execute('SELECT %s FROM summary, addresses WHERE summary.id=addresses.id_of_row AND addresses.address="%s"' % (','.join(fields), search_filter))
+            return cursor.fetchall()
+        elif utils.is_valid_fingerprint(search_filter):
+            logging.info("Search based on fingerprint")
+            if '$' in search_filter:
+                search_filter = search_filter.strip('$')
+            clauses.append('fingerprint like "%s%%"' % search_filter)
+        elif utils.is_valid_nickname(search_filter):
+            logging.info("Search based on nickname")
+            clauses.append('nickname like "%s%%"' % search_filter)
     else:
         if running_filter:
             clauses.append("running = %s" % int(running_filter))
