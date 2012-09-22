@@ -30,6 +30,12 @@ DB_UPDATE_INTERVAL = 60
 # The timer object used for updating the database.
 FRESHEN_TIMER = None
 
+# Total number of rows in summary db. This can also be calculated during
+# run time by doing "SELECT COUNT(*) FROM summary" but this will take
+# time to execute. It seems like a better idea to count the number of rows
+# during insertion.
+TOTAL_ROWS = 0
+
 # Database schemas.
 # Summary database:  in conjunction with addresses and flags, holds the
 # information in the summary document.  addresses and flags are lists of
@@ -124,7 +130,7 @@ def update_databases(summary_file=None):
     database.  Once this function completes, all future reads will be
     from the "updated" database.
     """
-    global DB_CREATION_TIME
+    global DB_CREATION_TIME, TABLE_ROWS
 
     if DB_CREATION_TIME >= os.stat(summary_file).st_mtime:
         return
@@ -141,6 +147,7 @@ def update_databases(summary_file=None):
     CURSOR.execute('DELETE FROM %s' % summary_tbl_name)
     CURSOR.execute('DELETE FROM %s' % flags_tbl_name)
     CURSOR.execute('DELETE FROM %s' %addresses_tbl_name)
+    TABLE_ROWS = 0
 
     # Create the summary database.  We could accumulate all the router tuples
     # and then insert them with an executemany(...) in one go, except that
@@ -192,6 +199,7 @@ def update_databases(summary_file=None):
             # or might allow users to optimize in this way.
             CURSOR.execute(summary_insert_stmt, router_tuple)
             id_num = CURSOR.lastrowid
+            TABLE_ROWS += 1
 
             address_values = (id_num, router.address)
             CURSOR.execute(addresses_insert_stmt, address_values)
@@ -260,9 +268,11 @@ def query_summary_tbl(running_filter=None, type_filter=None, hex_fingerprint_fil
         limit_clause = 'LIMIT %s' % limit_value
     offset_clause = ''
     if offset_value:
+        if not limit_value:
+            # sqlite doesn't support OFFSET without a LIMIT clause, this is
+            # a hack to get around that.
+            limit_clause = 'LIMIT %s' % (TOTAL_ROWS-int(offset_value))
         offset_clause = 'OFFSET %s' % offset_value
-
-    cursor = conn.cursor()
     cursor.execute('SELECT %s FROM summary %s %s %s %s' %
                    (','.join(fields), where_clause, order_clause, limit_clause,
                     offset_clause))
