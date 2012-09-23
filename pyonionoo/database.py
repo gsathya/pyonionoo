@@ -204,7 +204,7 @@ def query_summary_tbl(running_filter=None, type_filter=None, hex_fingerprint_fil
     clauses = []
     if search_filter:
         for filter in search_filter:
-            clauses.append("search like '%%%s%%'" % filter)
+            clauses.append("search like '%% %s%%'" % filter)
     if running_filter:
         clauses.append("running = %s" % int(running_filter))
     if type_filter:
