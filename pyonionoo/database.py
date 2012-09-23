@@ -45,30 +45,21 @@ TOTAL_ROWS = 0
 # will be made into an alias for rowid.
 summary_tbl_name = 'summary'
 summary_schema = """
-id INTEGER PRIMARY KEY, 
-type CHARACTER, 
-nickname STRING, 
-fingerprint STRING, 
-running BOOLEAN, 
-time_published STRING, 
-OR_port STRING, 
-dir_port STRING, 
-consensus_weight INTEGER, 
-country_code STRING, 
-hostname STRING, 
-time_lookup STRING
-"""
-
-addresses_tbl_name = 'addresses'
-addresses_schema = """
-id_of_row INTEGER, 
-address STRING
-"""
-
-flags_tbl_name = 'flags'
-flags_schema = """
-id_of_row INTEGER, 
-flag STRING
+id INTEGER PRIMARY KEY,
+type CHARACTER,
+nickname STRING,
+fingerprint STRING,
+running BOOLEAN,
+time_published STRING,
+or_port STRING,
+dir_port STRING,
+consensus_weight INTEGER,
+country_code STRING,
+hostname STRING,
+time_lookup STRING,
+flags STRING,
+addresses STRING,
+search STRING
 """
 
 def _create_table(conn, tbl_name, schema):
@@ -113,8 +104,6 @@ def bootstrap_database(metrics_out, summary_file):
 
     # Create the tables.
     _create_table(conn, summary_tbl_name, summary_schema)
-    _create_table(conn, flags_tbl_name, flags_schema)
-    _create_table(conn, addresses_tbl_name, addresses_schema)
 
     conn.commit()
 
@@ -122,13 +111,16 @@ def bootstrap_database(metrics_out, summary_file):
 
 def update_databases(summary_file=None):
     """
-    Updates all three databases information.
+    Updates the database.
 
     This operation operates as a single transaction.  Therefore,
     the database can be read by other requests while it is being
     performed, and those reads will correspond to the "un-updated"
     database.  Once this function completes, all future reads will be
     from the "updated" database.
+
+    @type summary_file: string
+    @param summary_file: full path to the summary file
     """
     global DB_CREATION_TIME, TABLE_ROWS
 
@@ -145,8 +137,6 @@ def update_databases(summary_file=None):
     logging.info("Deleting data from databases")
     CURSOR = conn.cursor()
     CURSOR.execute('DELETE FROM %s' % summary_tbl_name)
-    CURSOR.execute('DELETE FROM %s' % flags_tbl_name)
-    CURSOR.execute('DELETE FROM %s' %addresses_tbl_name)
     TABLE_ROWS = 0
 
     # Create the summary database.  We could accumulate all the router tuples
@@ -158,25 +148,15 @@ def update_databases(summary_file=None):
     # field in the flags/addresses table.  Here we can avoid all those
     # selects, because the rowid attribute of the cursor is set to that
     # id field right after we execute the (individual) insert statements.
-    summary_fields = ('type', 'nickname', 'fingerprint', 'running',
-                      'time_published', 'OR_port', 'dir_port', 'consensus_weight',
-                      'country_code', 'hostname', 'time_lookup')
-    addresses_fields = ('id_of_row', 'address')
-    flags_fields = ('id_of_row', 'flag')
+    summary_fields = ('type', 'nickname', 'fingerprint', 'running', 'time_published',
+                      'or_port', 'dir_port', 'consensus_weight', 'country_code',
+                      'hostname', 'time_lookup', 'flags', 'addresses', 'search')
 
     insert_stmt = 'insert into %s (%s) values (%s)'
 
     # create insertion statement for summary table
     summary_insert_stmt = (insert_stmt % (summary_tbl_name, ','.join(summary_fields),
                                           ','.join(['?']*len(summary_fields))))
-
-    # create insertion statement for addresses table
-    addresses_insert_stmt = (insert_stmt % (addresses_tbl_name, ','.join(addresses_fields),
-                                            ','.join(['?']*len(addresses_fields))))
-
-    # create insertion statement for flags table
-    flags_insert_stmt = (insert_stmt % (flags_tbl_name, ','.join(flags_fields),
-                                        ','.join(['?']*len(flags_fields))))
 
     if not summary_file:
         # raise Exception?
@@ -187,10 +167,7 @@ def update_databases(summary_file=None):
             router = Router()
             router.parse(line)
 
-            router_tuple = (router.type, router.nickname, router.fingerprint,
-                            router.running, router.time_published, router.orport,
-                            router.dirport, router.consensus_weight, router.country_code,
-                            router.hostname, router.time_of_lookup)
+            router_tuple = router.get_router_tuple(summary_fields)
 
             # TODO: Determine whether sqlite3 optimizes by remembering
             # this insert command and not parsing it every time it sees
@@ -200,13 +177,6 @@ def update_databases(summary_file=None):
             CURSOR.execute(summary_insert_stmt, router_tuple)
             id_num = CURSOR.lastrowid
             TABLE_ROWS += 1
-
-            address_values = (id_num, router.address)
-            CURSOR.execute(addresses_insert_stmt, address_values)
-
-            for flag in router.flags:
-                flag_values = (id_num, flag)
-                CURSOR.execute(flags_insert_stmt, flag_values)
 
     conn.commit()
     logging.info("Table updated")
@@ -227,7 +197,7 @@ def query_summary_tbl(running_filter=None, type_filter=None, hex_fingerprint_fil
                       order_asc=True, offset_value=None, limit_value=None,
                       fields=('fingerprint',)):
     conn = get_database_conn()
-
+    cursor = conn.cursor()
     # Build up a WHERE clause based on the request parameters.  We only
     # consider the case in which the client specifies 'search' or
     # some subset (possibly empty) of {'running', 'type', 'lookup', 'country'}.

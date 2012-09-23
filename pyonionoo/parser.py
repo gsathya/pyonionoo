@@ -10,14 +10,14 @@ class Router:
         self.exit_addresses = None
         self.or_addresses = None
         self.time_published = None
-        self.orport = None
-        self.dirport = None
+        self.or_port = None
+        self.dir_port = None
         self.flags = None
         self.running = False
         self.consensus_weight = None
         self.country_code = None
         self.hostname = None
-        self.time_of_lookup = None
+        self.time_lookup = None
         self.type = None
 
     def parse(self, raw_content):
@@ -46,8 +46,8 @@ class Router:
         
         self.time_published = self._parse_timestamp(values[4] + ' ' + values[5])
         
-        self.orport = int(values[6])
-        self.dirport = int(values[7])
+        self.or_port = int(values[6])
+        self.dir_port = int(values[7])
         self.flags = values[8].split(',')
         for flag in self.flags:
             if flag == "Running":
@@ -55,7 +55,7 @@ class Router:
         self.consensus_weight = int(values[9])
         self.country_code = values[10]
         if values[11] != "null" : self.hostname = values[11]
-        self.time_of_lookup = int(values[12])
+        self.time_lookup = int(values[12])
     
     def _parse_timestamp(self, content):
       """
@@ -67,3 +67,29 @@ class Router:
         return timestamp
       except ValueError:
         raise ValueError("Timestamp wasn't parseable: %s" % line)
+
+    def get_router_tuple(self, fields):
+        """
+        Returns a tuple of values.
+
+        @param type: list/tuple
+        @param fields: attributes of Router for which the values must be returned
+
+        @rtype: tuple
+        @return: list of values corresponding to the fields
+        """
+
+        router_list = []
+        for field in fields:
+            if field == "search":
+                value = ' %s %s %s' % (self.fingerprint, self.nickname,
+                                       self.address)
+            elif field == "flags":
+                value = ' '.join(self.flags)
+                # add leading space
+                value = ' %s' % value
+            else:
+                value = getattr(self, field)
+            router_list.append(value)
+
+        return tuple(router_list)
