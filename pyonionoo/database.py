@@ -203,29 +203,16 @@ def query_summary_tbl(running_filter=None, type_filter=None, hex_fingerprint_fil
     # some subset (possibly empty) of {'running', 'type', 'lookup', 'country'}.
     clauses = []
     if search_filter:
-        # We have to do some heuristics here, because the search filters
-        # do not come with anything to identify which field they correspond
-        # to.  E.g., the request search=ffa means any relay with nickname
-        # starting with 'ffa' or fingerprint starting with 'ffa' or '$ffa'.
-
-        # Actually, this is a moderately painful parameter to implement.
-        # Testing for an IP address probably means using regular expressions.
-        # SQLite doesn't support them without a user-defined function.
-        # Matching against a Python RE is easy to do, but then we have
-        # to have a where clause that matches against the beginning of a
-        # field value, and SQLite doesn't appear to support such a search
-        # (unless, of course, you want to write a user-defined match()
-        # function).
-        pass
-    else:
-        if running_filter:
-            clauses.append("running = %s" % int(running_filter))
-        if type_filter:
-            clauses.append("type = '%s'" % type_filter)
-        if hex_fingerprint_filter:
-            clauses.append("fingerprint = '%s'" % hex_fingerprint_filter)
-        if country_filter:
-            clauses.append("country_code = '%s'" % country_filter)
+        for filter in search_filter:
+            clauses.append("search like '%%%s%%'" % filter)
+    if running_filter:
+        clauses.append("running = %s" % int(running_filter))
+    if type_filter:
+        clauses.append("type = '%s'" % type_filter)
+    if hex_fingerprint_filter:
+        clauses.append("fingerprint = '%s'" % hex_fingerprint_filter)
+    if country_filter:
+        clauses.append("country_code = '%s'" % country_filter)
     where_clause = ('WHERE %s' % ' and '.join(clauses)) if clauses else ''
 
     # Construct the ORDER, LIMIT, and OFFSET clauses.
@@ -259,7 +246,7 @@ def get_summary_routers(running_filter=None, type_filter=None, hex_fingerprint_f
     @return: tuple of form (relays, bridges, relays_time, bridges_time), where
              * relays/bridges is a list of Router objects
              * relays_time/bridges_time is a datetime object with the most
-               recent timestamp of the relay descriptors in relays.
+               recent timestamp of the relay/bridges descriptors in relays.
     """
 
     # Timestamps of most recent relay/bridge in the returned set.
