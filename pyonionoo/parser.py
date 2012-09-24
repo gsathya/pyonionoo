@@ -21,7 +21,7 @@ class Router:
         self.type = None
 
     def parse(self, raw_content):
-        values = raw_content.split()
+        values = raw_content.split(' ')
         if len(values) < 9:
             #raise Exception
             raise ValueError("Invalid router!")
