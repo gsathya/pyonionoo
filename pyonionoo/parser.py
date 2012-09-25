@@ -1,10 +1,14 @@
 import re
 import datetime
 
+from binascii import a2b_hex
+from hashlib import sha1
+
 class Router:
     def __init__(self):
         self.nickname = None
         self.fingerprint = None
+        self.hex_fingerprint = None
         self.address = None
         self.addresses = None
         self.exit_addresses = None
@@ -30,6 +34,7 @@ class Router:
 
         self.nickname = values[1]
         self.fingerprint = values[2]
+        self.hex_fingerprint = sha1(a2b_hex(self.fingerprint)).hexdigest()
 
         if ';' in values[3]: 
             address_parts = values[3].split(';')
@@ -82,8 +87,8 @@ class Router:
         router_list = []
         for field in fields:
             if field == "search":
-                value = ' %s %s %s' % (self.fingerprint, self.nickname,
-                                       self.address)
+                value = ' %s %s %s %s' % (self.fingerprint, self.hex_fingerprint,
+                                          self.nickname, self.address)
             elif field == "flags":
                 value = ' '.join(self.flags)
                 # add leading space
