@@ -1,10 +1,12 @@
 """
 Handle URL request parameters.  Provides the following functions:
 
-    parse:  given a GET request parameter dictionary, return a keyword
+parse:  given a GET request parameter dictionary, return a keyword
         argument dictionary suitable for use by the database module
         functions.
 """
+
+import cyclone.web
 
 # Request parameters.
 ARGUMENTS = ['type', 'running', 'search', 'lookup', 'country', 'order', 'offset', 'limit']
@@ -49,9 +51,9 @@ def parse(arguments):
                 elif value.lower() == 'false':
                     running_filter = False
                 else:
-                    raise ValueError(
-                        'Invalid argument to running parameter: {}.'.format(
-                            value))
+                    error_msg = 'Invalid argument to running parameter: %s' % value
+                    raise cyclone.web.HTTPError(400, error_msg)
+
             if key == "type":
                 value = values[0]
                 if value == 'relay':
@@ -59,20 +61,15 @@ def parse(arguments):
                 elif value == 'bridge':
                     type_filter = 'b'
                 else:
-                    raise ValueError(
-                        'Invalid argument to type parameter: {}.'.format(
-                            value))
+                    error_msg = 'Invalid argument to running parameter: %s' % value
+                    raise cyclone.web.HTTPError(400, error_msg)
+
             if key == "lookup":
                 hex_fingerprint_filter = values[0]
+
             if key == "country":
                 country_filter = values[0]
 
-            # XXX: The protocol allows a list of search terms.  In a URL-based
-            # GET request, these would appear as search=term1&search=term2...,
-            # and then values would be [term1, term2,...].  But the protocol
-            # specifies that multiple terms appear as a single argument for
-            # the search parameter, which is then given to us as a single
-            # (space-separated) string.
             if key == "search":
                 search_filter = values[0].split()
 
@@ -85,24 +82,28 @@ def parse(arguments):
                 if value == "consensus_weight":
                     order_field = 'consensus_weight'
                 else:
-                    raise ValueError('Invalid order argument: {}'.format(value))
+                    error_msg = 'Invalid order argument: %s' % value
+                    raise cyclone.web.HTTPError(400, error_msg)
 
             if key == 'offset':
                 value = values[0]
                 try:
                     offset_value = int(value)
                 except ValueError:
-                    raise ValueError('Invalid offset argument: {}'.format(value))
+                    error_msg = 'Invalid offset argument: %s' % value
+                    raise cyclone.web.HTTPError(400, error_msg)
 
             if key == 'limit':
                 value = values[0]
                 try:
                     limit_value = int(value)
                 except ValueError:
-                    raise ValueError('Invalid limit argument: {}'.format(value))
+                    error_msg = 'Invalid limit argument: %s' % value
+                    raise cyclone.web.HTTPError(400, error_msg)
 
         else:   # key not in ARGUMENTS
-            raise NotImplementedError('Invalid request parameter: {}'.format(key))
+            error_msg = 'Invalid request parameter: %s' % value
+            raise cyclone.web.HTTPError(400, error_msg)
 
     # There must be a better way to do this...
     return {
@@ -116,4 +117,3 @@ def parse(arguments):
         'offset_value' : offset_value,
         'limit_value' : limit_value
     }
-
