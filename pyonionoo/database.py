@@ -195,8 +195,10 @@ def query_summary_tbl(running_filter=None, type_filter=None, hex_fingerprint_fil
     # some subset (possibly empty) of {'running', 'type', 'lookup', 'country'}.
     clauses = []
     if search_filter:
-        for filter in search_filter:
-            clauses.append("search like '%% %s%%'" % filter)
+        for search_string in search_filter:
+            if search_string[0] == '$':
+                search_string = ''.join(search_string[1:])
+            clauses.append("search like '%% %s%%'" % search_string)
     if running_filter:
         clauses.append("running = %s" % int(running_filter))
     if type_filter:
