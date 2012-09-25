@@ -61,7 +61,7 @@ def parse(arguments):
                 elif value == 'bridge':
                     type_filter = 'b'
                 else:
-                    error_msg = 'Invalid argument to running parameter: %s' % value
+                    error_msg = 'Invalid argument to type parameter: %s' % value
                     raise cyclone.web.HTTPError(400, error_msg)
 
             if key == "lookup":
