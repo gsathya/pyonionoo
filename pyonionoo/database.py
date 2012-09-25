@@ -54,7 +54,7 @@ hostname TEXT,
 time_lookup TEXT,
 flags TEXT,
 addresses TEXT,
-search TEXT
+search TEXT collate NOCASE
 """
 
 def _create_table(conn, tbl_name, schema):
