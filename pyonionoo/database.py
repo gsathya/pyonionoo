@@ -40,21 +40,21 @@ FRESHEN_TIMER = None
 summary_tbl_name = 'summary'
 summary_schema = """
 id INTEGER PRIMARY KEY,
-type CHARACTER,
-nickname STRING,
-fingerprint STRING,
-hashed_fingerprint STRING,
+type TEXT,
+nickname TEXT,
+fingerprint TEXT,
+hashed_fingerprint TEXT,
 running BOOLEAN,
-time_published STRING,
-or_port STRING,
-dir_port STRING,
+time_published TEXT,
+or_port TEXT,
+dir_port TEXT,
 consensus_weight INTEGER,
-country_code STRING,
-hostname STRING,
-time_lookup STRING,
-flags STRING,
-addresses STRING,
-search STRING
+country_code TEXT,
+hostname TEXT,
+time_lookup TEXT,
+flags TEXT,
+addresses TEXT,
+search TEXT
 """
 
 def _create_table(conn, tbl_name, schema):
