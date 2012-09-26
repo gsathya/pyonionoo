@@ -205,7 +205,8 @@ def query_summary_tbl(running_filter=None, type_filter=None, hex_fingerprint_fil
     if type_filter:
         clauses.append("type = '%s'" % type_filter)
     if hex_fingerprint_filter:
-        clauses.append("hashed_fingerprint = '%s'" % hex_fingerprint_filter)
+        clauses.append("fingerprint = '%s' or hashed_fingerprint = '%s'" %
+                       (hex_fingerprint_filter, hex_fingerprint_filter))
     if country_filter:
         clauses.append("country_code = '%s'" % country_filter)
     where_clause = ('WHERE %s' % ' and '.join(clauses)) if clauses else ''
