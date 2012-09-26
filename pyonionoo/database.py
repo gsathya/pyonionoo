@@ -43,7 +43,7 @@ id INTEGER PRIMARY KEY,
 type CHARACTER,
 nickname STRING,
 fingerprint STRING,
-hex_fingerprint STRING,
+hashed_fingerprint STRING,
 running BOOLEAN,
 time_published STRING,
 or_port STRING,
@@ -142,7 +142,7 @@ def update_databases(summary_file=None):
     # field in the flags/addresses table.  Here we can avoid all those
     # selects, because the rowid attribute of the cursor is set to that
     # id field right after we execute the (individual) insert statements.
-    summary_fields = ('type', 'nickname', 'fingerprint', 'hex_fingerprint', 'running',
+    summary_fields = ('type', 'nickname', 'fingerprint', 'hashed_fingerprint', 'running',
                       'time_published', 'or_port', 'dir_port', 'consensus_weight',
                       'country_code', 'hostname', 'time_lookup', 'flags', 'addresses', 'search')
 
@@ -205,7 +205,7 @@ def query_summary_tbl(running_filter=None, type_filter=None, hex_fingerprint_fil
     if type_filter:
         clauses.append("type = '%s'" % type_filter)
     if hex_fingerprint_filter:
-        clauses.append("hex_fingerprint = '%s'" % hex_fingerprint_filter)
+        clauses.append("hashed_fingerprint = '%s'" % hex_fingerprint_filter)
     if country_filter:
         clauses.append("country_code = '%s'" % country_filter)
     where_clause = ('WHERE %s' % ' and '.join(clauses)) if clauses else ''
