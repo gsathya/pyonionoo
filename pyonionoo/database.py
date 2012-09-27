@@ -232,6 +232,28 @@ def query_summary_tbl(running_filter=None, type_filter=None, hex_fingerprint_fil
 
     return cursor.fetchall()
 
+def get_timestamp():
+    """
+    Get the latest known published timestamp of relay consensus and network
+    consensus document
+
+    @rtype: tuple
+    @return: (relay_timestamp, bridge_timestamp) where
+             relays_timestamp, bridges_timestamp is a datetime object
+    """
+
+    relay_timestamp, bridge_timestamp = None, None
+    conn = get_database_conn()
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT MAX(time_published) FROM summary WHERE type="r"')
+    relay_timestamp = datetime.datetime.strptime(cursor.fetchone()[0], "%Y-%m-%d %H:%M:%S")
+
+    cursor.execute('SELECT MAX(time_published) FROM summary WHERE type="b"')
+    bridge_timestamp = datetime.datetime.strptime(cursor.fetchone()[0], "%Y-%m-%d %H:%M:%S")
+
+    return (relay_timestamp, bridge_timestamp)
+
 def get_summary_routers(running_filter=None, type_filter=None, hex_fingerprint_filter=None,
                         country_filter=None, search_filter=None, order_field=None,
                         order_asc=True, offset_value=None, limit_value=None):
@@ -241,13 +263,11 @@ def get_summary_routers(running_filter=None, type_filter=None, hex_fingerprint_f
     @rtype: tuple.
     @return: tuple of form (relays, bridges, relays_time, bridges_time), where
              * relays/bridges is a list of Router objects
-             * relays_time/bridges_time is a datetime object with the most
+             * relays_timestamp/bridges_timestamp is a datetime object with the most
                recent timestamp of the relay/bridges descriptors in relays.
     """
 
-    # Timestamps of most recent relay/bridge in the returned set.
-    relay_timestamp = datetime.datetime(1900, 1, 1, 1, 0)
-    bridge_timestamp = datetime.datetime(1900, 1, 1, 1, 0)
+    relay_timestamp, bridge_timestamp = get_timestamp()
 
     relays, bridges = [], []
     fields = ('type', 'nickname', 'fingerprint', 'running', 'country_code',
@@ -255,22 +275,13 @@ def get_summary_routers(running_filter=None, type_filter=None, hex_fingerprint_f
     for row in query_summary_tbl(running_filter, type_filter, hex_fingerprint_filter,
                                  country_filter, search_filter,order_field, order_asc,
                                  offset_value, limit_value, fields):
-
-        current_router = datetime.datetime.strptime(row[5], "%Y-%m-%d %H:%M:%S")
-
         router = Router()
 
         # This is magic
         map(lambda (attr, value): setattr(router, attr, value), zip(fields, row))
 
-        if row[0] == 'r':
-            relays.append(router)
-            if current_router > relay_timestamp:
-                relay_timestamp = current_router
-        if row[0] == 'b':
-            bridges.append(router)
-            if current_router > bridge_timestamp:
-                bridge_timestamp = current_router
+        if row[0] == 'r': relays.append(router)
+        if row[0] == 'b': bridges.append(router)
 
     total_routers = (relays, bridges, relay_timestamp, bridge_timestamp)
     return total_routers
