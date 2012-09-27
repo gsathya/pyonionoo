@@ -89,6 +89,8 @@ class Router:
             if field == "search":
                 value = ' %s %s %s %s' % (self.fingerprint, self.hashed_fingerprint,
                                           self.nickname, self.address)
+            elif field == "lookup":
+                value = ' %s %s' % (self.fingerprint, self.hashed_fingerprint)
             elif field == "flags":
                 value = ' '.join(self.flags)
                 # add leading space

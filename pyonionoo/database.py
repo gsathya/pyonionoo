@@ -54,7 +54,8 @@ hostname TEXT,
 time_lookup TEXT,
 flags TEXT,
 addresses TEXT,
-search TEXT collate NOCASE
+search TEXT collate NOCASE,
+lookup TEXT collate NOCASE
 """
 
 def _create_table(conn, tbl_name, schema):
@@ -144,7 +145,8 @@ def update_databases(summary_file=None):
     # id field right after we execute the (individual) insert statements.
     summary_fields = ('type', 'nickname', 'fingerprint', 'hashed_fingerprint', 'running',
                       'time_published', 'or_port', 'dir_port', 'consensus_weight',
-                      'country_code', 'hostname', 'time_lookup', 'flags', 'addresses', 'search')
+                      'country_code', 'hostname', 'time_lookup', 'flags', 'addresses',
+                      'search', 'lookup')
 
     insert_stmt = 'insert into %s (%s) values (%s)'
 
@@ -185,7 +187,7 @@ def get_database_conn():
     conn = sqlite3.connect(DBNAME)
     return conn
 
-def query_summary_tbl(running_filter=None, type_filter=None, hex_fingerprint_filter=None,
+def query_summary_tbl(running_filter=None, type_filter=None, lookup_filter=None,
                       country_filter=None, search_filter=None, order_field=None,
                       order_asc=True, offset_value=None, limit_value=None,
                       fields=('fingerprint',)):
@@ -204,9 +206,8 @@ def query_summary_tbl(running_filter=None, type_filter=None, hex_fingerprint_fil
         clauses.append("running = %s" % int(running_filter))
     if type_filter:
         clauses.append("type = '%s'" % type_filter)
-    if hex_fingerprint_filter:
-        clauses.append("fingerprint = '%s' or hashed_fingerprint = '%s'" %
-                       (hex_fingerprint_filter, hex_fingerprint_filter))
+    if lookup_filter:
+        clauses.append("lookup like '%% %s%%'" % lookup_filter)
     if country_filter:
         clauses.append("country_code = '%s'" % country_filter)
     where_clause = ('WHERE %s' % ' and '.join(clauses)) if clauses else ''
@@ -254,7 +255,7 @@ def get_timestamp():
 
     return (relay_timestamp, bridge_timestamp)
 
-def get_summary_routers(running_filter=None, type_filter=None, hex_fingerprint_filter=None,
+def get_summary_routers(running_filter=None, type_filter=None, lookup_filter=None,
                         country_filter=None, search_filter=None, order_field=None,
                         order_asc=True, offset_value=None, limit_value=None):
     """
@@ -272,7 +273,7 @@ def get_summary_routers(running_filter=None, type_filter=None, hex_fingerprint_f
     relays, bridges = [], []
     fields = ('type', 'nickname', 'fingerprint', 'running', 'country_code',
             'time_published', 'consensus_weight')
-    for row in query_summary_tbl(running_filter, type_filter, hex_fingerprint_filter,
+    for row in query_summary_tbl(running_filter, type_filter, lookup_filter,
                                  country_filter, search_filter,order_field, order_asc,
                                  offset_value, limit_value, fields):
         router = Router()

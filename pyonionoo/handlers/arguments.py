@@ -26,10 +26,8 @@ def parse(arguments):
     # request parameter is not present at all).
     running_filter = None
     type_filter = None
-    hex_fingerprint_filter = None
+    lookup_filter = None
     country_filter = None
-
-    # TODO:  Handle 'search' parameter.
     search_filter = None
 
     # Ordering offset and limit.
@@ -65,7 +63,7 @@ def parse(arguments):
                     raise cyclone.web.HTTPError(400, error_msg)
 
             if key == "lookup":
-                hex_fingerprint_filter = values[0]
+                lookup_filter = values[0]
 
             if key == "country":
                 country_filter = values[0]
@@ -109,7 +107,7 @@ def parse(arguments):
     return {
         'running_filter' : running_filter,
         'type_filter' : type_filter,
-        'hex_fingerprint_filter' : hex_fingerprint_filter,
+        'lookup_filter' : lookup_filter,
         'country_filter' : country_filter,
         'search_filter' : search_filter,
         'order_field' : order_field,
