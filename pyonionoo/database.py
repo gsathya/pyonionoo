@@ -175,7 +175,7 @@ def update_databases(summary_file=None):
     logging.info("Table updated")
     DB_CREATION_TIME = time.time()
 
-    FRESHEN_TIMER = threading.Timer(DB_UPDATE_INTERVAL, update_databases, summary_file)
+    FRESHEN_TIMER = threading.Timer(DB_UPDATE_INTERVAL, update_databases, [summary_file])
     FRESHEN_TIMER.start()
 
 def cancel_freshen():
