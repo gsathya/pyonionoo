@@ -42,64 +42,69 @@ def parse(arguments):
     # argument.
     for key, values in arguments.iteritems():
         if key in ARGUMENTS:
+            value = values[0]
+            error_msg = 'Invalid argument to %s parameter: %s' % (key, value)
+
             if key == "running":
-                value = values[0]
-                if value.lower() == 'true':
+                if value == 'true':
                     running_filter = True
-                elif value.lower() == 'false':
+                elif value == 'false':
                     running_filter = False
                 else:
-                    error_msg = 'Invalid argument to running parameter: %s' % value
                     raise cyclone.web.HTTPError(400, error_msg)
 
-            if key == "type":
-                value = values[0]
+            elif key == "type":
                 if value == 'relay':
                     type_filter = 'r'
                 elif value == 'bridge':
                     type_filter = 'b'
                 else:
-                    error_msg = 'Invalid argument to type parameter: %s' % value
                     raise cyclone.web.HTTPError(400, error_msg)
 
-            if key == "lookup":
-                lookup_filter = values[0]
+            elif key == "lookup":
+                if len(value) == 40:
+                    lookup_filter = value
+                else:
+                    raise cyclone.web.HTTPError(400, error_msg)
 
-            if key == "country":
-                country_filter = values[0]
+            elif key == "country":
+                if len(value) == 2:
+                    country_filter = value
+                else:
+                    raise cyclone.web.HTTPError(400, error_msg)
 
-            if key == "search":
-                search_filter = values[0].split()
+            elif key == "search":
+                if value:
+                    search_filter = value.split()
+                else:
+                    raise cyclone.web.HTTPError(400, error_msg)
 
             # TODO:  Handle list of ordering fields.
-            if key == "order":
-                value = values[0]
+            # This is pretty borked.
+            elif key == "order":
+                value = value.split()
                 order_asc = (value[0] != '-')
                 if value[0] == '-':
                     value = value[1:]
                 if value == "consensus_weight":
                     order_field = 'consensus_weight'
                 else:
-                    error_msg = 'Invalid order argument: %s' % value
                     raise cyclone.web.HTTPError(400, error_msg)
 
-            if key == 'offset':
-                value = values[0]
+            elif key == 'offset':
                 try:
                     offset_value = int(value)
                 except ValueError:
-                    error_msg = 'Invalid offset argument: %s' % value
                     raise cyclone.web.HTTPError(400, error_msg)
 
-            if key == 'limit':
-                value = values[0]
+            elif key == 'limit':
                 try:
                     limit_value = int(value)
                 except ValueError:
-                    error_msg = 'Invalid limit argument: %s' % value
                     raise cyclone.web.HTTPError(400, error_msg)
 
-        else:   # key not in ARGUMENTS
+        # key not in ARGUMENTS
+        else:
             error_msg = 'Invalid request parameter: %s' % value
             raise cyclone.web.HTTPError(400, error_msg)
 
