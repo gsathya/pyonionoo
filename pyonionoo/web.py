@@ -31,17 +31,15 @@ class Application(cyclone.web.Application):
         ]
 
         logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO)
-        
+
         settings = config.parse_config(config_file)
         if not settings['metrics_out']:
             raise ValueError
 
         database.bootstrap_database(settings['metrics_out'], settings['summary_file'])
-        
+
         cyclone.web.Application.__init__(self, handlers, **settings)
 
     def stopFactory(self):
-        print 'stopFactory'
         database.cancel_freshen()
         cyclone.web.Application.stopFactory(self)
-

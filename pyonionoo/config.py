@@ -63,4 +63,5 @@ def parse_config(filename):
 
     settings['metrics_out'] = xget(cfg.get, 'metrics', 'out_dir', '/tmp')
     settings['summary_file'] = xget(cfg.get, 'metrics', 'summary_file', 'summary')
+    settings['details'] = xget(cfg.get, 'metrics', 'details', 'details')
     return settings

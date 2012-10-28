@@ -26,7 +26,7 @@ class SummaryHandler(cyclone.web.RequestHandler):
         d = threads.deferToThread(self._get_results)
         response = yield d
         self.write(response)
-        
+
     def _get_results(self):
         user_arguments = self.request.arguments
         routers = database.get_summary_routers(**arguments.parse(user_arguments))
@@ -51,4 +51,3 @@ class SummaryHandler(cyclone.web.RequestHandler):
         response['bridges_published'] = bridge_timestamp.strftime("%Y-%m-%d %H:%M:%S")
 
         return response
-

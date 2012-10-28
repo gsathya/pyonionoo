@@ -286,3 +286,24 @@ def get_summary_routers(running_filter=None, type_filter=None, lookup_filter=Non
 
     total_routers = (relays, bridges, relay_timestamp, bridge_timestamp)
     return total_routers
+
+def get_detail_routers(running_filter=None, type_filter=None, lookup_filter=None,
+                       country_filter=None, search_filter=None, order_field=None,
+                       order_asc=True, offset_value=None, limit_value=None):
+
+    relay_timestamp, bridge_timestamp = get_timestamp()
+
+    relays, bridges = [], []
+    fields = ('type', 'fingerprint')
+
+    for row in query_summary_tbl(running_filter, type_filter, lookup_filter,
+                                 country_filter, search_filter,order_field, order_asc,
+                                 offset_value, limit_value, fields):
+        path = os.path.join('out/details', row[1])
+        with open(path) as fh:
+            data = fh.read().replace('\n', '')
+
+        if row[0] == 'r': relays.append(data)
+        elif row[0] == 'b': bridges.append(data)
+
+    return (relays, bridges, relay_timestamp, bridge_timestamp)
