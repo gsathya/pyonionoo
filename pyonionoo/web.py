@@ -18,8 +18,10 @@ import logging
 
 import cyclone.locale
 import cyclone.web
+
 import handlers.summary as summary
 import handlers.detail as detail
+import handlers.bandwidth as bandwidth
 
 from pyonionoo import config, database
 
@@ -27,7 +29,8 @@ class Application(cyclone.web.Application):
     def __init__(self, config_file):
         handlers = [
             (r"/summary",              summary.SummaryHandler),
-            (r"/detail",               detail.DetailHandler)
+            (r"/detail",               detail.DetailHandler),
+            (r"/bandwidth",            bandwidth.BandwidthHandler),
         ]
 
         logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO)
