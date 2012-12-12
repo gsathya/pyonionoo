@@ -9,7 +9,7 @@ def has_fp(relay_fp, data, relay=True):
 
     if relay: relay_type = "relays"
     else: relay_type = "bridges"
-    
+
     for relay in data[relay_type]:
         if relay_fp in relay.values(): return True
 
