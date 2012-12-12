@@ -1,3 +1,6 @@
 *.swp
 *.pyc
+.#*
+.ropeproject
+_trial_temp
 dropin.cache
